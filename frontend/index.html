@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de Saldo Remanescente ADR's v2.5 - Análise Automática Fechamento + After + Pré-Market + VIX + Cenário Macro</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header Profissional v2.3 -->
+        <header class="header-pro">
+            <div class="header-pro__content">
+                <div class="header-pro__icon">📊</div>
+                <div class="header-pro__text">
+                    <div class="header-pro__title-row">
+                        <h1>Calculadora de Saldo Remanescente ADR's v2.5</h1>
+                        <span class="badge badge--pro">v2.5</span>
+                        <span class="badge badge--night">Night Mode</span>
+                    </div>
+                    
+                    <!-- Indicador de Status Unificado -->
+                    <div class="status-indicators">
+                        <span class="status-badge" id="dataStatus">
+                            💾 Dados Salvos
+                        </span>
+                    </div>
+                    
+                    <p>Análise Automática Fechamento ATUAL + After (Manual) + Pré-Market (Manual) + VIX + Cenário Macro</p>
+                    <div class="header-pro__info">
+                        <div class="header-pro__datetime" id="currentDateTime"></div>
+                        <div class="header-pro__confidence">
+                            <span>Índice de Confiabilidade:</span>
+                            <span class="confidence-value" id="confidenceValue">0%</span>
+                        </div>
+                    <div class="header-pro__controls">
+                        <div class="header-pro__tabs">
+                            <button class="tab-button tab-button--active" id="tabCalculator" onclick="switchTab('calculator')">
+                                📊 Calculadora
+                            </button>
+                            <button class="tab-button" id="tabMacro" onclick="switchTab('macro')">
+                                📖 Interpretação Macro
+                            </button>
+                        </div>
+                        <div class="header-pro__settings">
+                            <button class="settings-toggle" id="settingsToggle" onclick="toggleSettings()" title="Configurações Avançadas">
+                                ⚙️
+                            </button>
+                        </div>
+                        <div class="header-pro__night-toggle">
+                            <button class="night-toggle" id="nightToggle" onclick="toggleNightMode()" title="Modo Noturno">
+                                🌙
+                            </button>
+                        </div>
+                    </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Configurações Avançadas -->
+        <div class="settings-panel" id="settingsPanel" style="display: none;">
+            <div class="settings-content">
+                <h3>⚙️ Configurações Avançadas</h3>
+                
+                <div class="setting-group">
+                    <label for="macroWeight">Peso dos Indicadores Macro:</label>
+                    <input type="range" id="macroWeight" min="0" max="50" value="25" onchange="updateMacroWeight()">
+                    <span id="macroWeightValue">25%</span>
+                </div>
+                
+                <div class="setting-group">
+                    <label for="vixSensitivity">Sensibilidade VIX:</label>
+                    <input type="range" id="vixSensitivity" min="1" max="5" value="3" onchange="updateVixSensitivity()">
+                    <span id="vixSensitivityValue">Normal</span>
+                </div>
+                
+                <div class="setting-group">
+                    <label for="autoSave">Auto-save:</label>
+                    <input type="checkbox" id="autoSave" checked onchange="toggleAutoSave()">
+                </div>
+                
+                <div class="setting-group">
+                    <label for="dataMode">Modo de Dados:</label>
+                    <select id="dataMode" onchange="switchDataMode()">
+                        <option value="simulated">Simulados</option>
+                        <option value="real">Reais (Yahoo Finance)</option>
+                    </select>
+                </div>
+                
+                <div class="setting-actions">
+                    <button onclick="resetSettings()">🔄 Resetar</button>
+                    <button onclick="exportSettings()">📤 Exportar</button>
+                    <button onclick="importSettings()">📥 Importar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Calculadora -->
+        <div class="tab-content" id="calculatorTab">
+            <!-- ADRs Principais -->
+            <section class="section section--adrs-main">
+                <div class="section-header">
+                    <h2>🏆 ADRs Principais (Alta Liquidez)</h2>
+                    <div class="section-info">
+                        <span class="weight-info">Peso: 100%</span>
+                        <span class="status-indicator" id="mainAdrsStatus">✅</span>
+                    </div>
+                </div>
+                
+                <div class="adrs-grid" id="mainAdrsGrid">
+                    <!-- VALE -->
+                    <div class="adr-card adr-card--main" data-ticker="VALE">
+                        <div class="adr-header">
+                            <h3>VALE</h3>
+                            <span class="adr-type">Principal</span>
+                        </div>
+                        <div class="adr-inputs">
+                            <div class="input-group">
+                                <label>Fechamento:</label>
+                                <input type="number" step="0.01" placeholder="0.00" class="closing-input" onchange="updateMainAdr('VALE', 'closing', this.value)">
+                                <span class="input-status" id="vale-closing-status"></span>
+                            </div>
+                            <div class="input-group">
+                                <label>After-Market:</label>
+                                <input type="number" step="0.01" placeholder="0.00" class="after-input" onchange="updateMainAdr('VALE', 'after', this.value)">
+                                <span class="input-status" id="vale-after-status"></span>
+                            </div>
+                            <div class="input-group">
+                                <label>Pré-Market:</label>
+                                <input type="number" step="0.01" placeholder="0.00" class="pre-input" onchange="updateMainAdr('VALE', 'pre', this.value)">
+                                <span class="input-status" id="vale-pre-status"></span>
+                            </div>
+                        </div>
+                        <div class="adr-result">
+                            <span class="result-label">Contribuição:</span>
+                            <span class="result-value" id="vale-contribution">0.00%</span>
+                        </div>
+                    </div>
+
+                    <!-- ITUB -->
+                    <div class="adr-card adr-card--main" data-ticker="ITUB">
+                        <div class="adr-header">
+                            <h3>ITUB</h3>
+                            <span class="adr-type">Principal</span>
+                        </div>
+                        <div class="adr-inputs">
+                            <div class="input-group">
+                                <label>Fechamento:</label>
+                                <input type="number" step="0.01" placeholder="0.00" class="closing-input" onchange="updateMainAdr('ITUB', 'closing', this.value)">
+                                <span class="input-status" id="itub-closing-status"></span>
+                            </div>
+                            <div class="input-group">
+                                <label>After-Market:</label>
+                                <input type="number" step="0.01" placeholder="0.00" class="after-input" onchange="updateMainAdr('ITUB', 'after', this.value)">
+                                <span class="input-status" id="itub-after-status"></span>
+                            </div>
+                            <div class="input-group">
+                                <label>Pré-Market:</label>
+                                <input type="number" step="0.01" placeholder="0.00" class="pre-input" onchange="updateMainAdr('ITUB', 'pre', this.value)">
+                                <span class="input-status" id="itub-pre-status"></span>
+                            </div>
+                        </div>
+                        <div class="adr-result">
+                            <span class="result-label">Contribuição:</span>
+                            <span class="result-value" id="itub-contribution">0.00%</span>
+                        </div>
+                    </div>
+
+                    <!-- PBR -->
+                    <div class="adr-card adr-card--main" data-ticker="PBR">
+                        <div class="adr-header">
+                            <h3>PBR</h3>
+                            <span class="adr-type">Principal</span>
+                        </div>
+                        <div class="adr-inputs">
+                            <div class="input-group">
+                                <label>Fechamento:</label>
+                                <input type="number" step="0.01" placeholder="0.00" class="closing-input" onchange="updateMainAdr('PBR', 'closing', this.value)">
+                                <span class="input-status" id="pbr-closing-status"></span>
+                            </div>
+                            <div class="input-group">
+                                <label>After-Market:</label>
+                                <input type="number" step="0.01" placeholder="0.00" class="after-input" onchange="updateMainAdr('PBR', 'after', this.value)">
+                                <span class="input-status" id="pbr-after-status"></span>
+                            </div>
+                            <div class="input-group">
+                                <label>Pré-Market:</label>
+                                <input type="number" step="0.01" placeholder="0.00" class="pre-input" onchange="updateMainAdr('PBR', 'pre', this.value)">
+                                <span class="input-status" id="pbr-pre-status"></span>
+                            </div>
+                        </div>
+                        <div class="adr-result">
+                            <span class="result-label">Contribuição:</span>
+                            <span class="result-value" id="pbr-contribution">0.00%</span>
+                        </div>
+                    </div>
+
+                    <!-- PBR-A -->
+                    <div class="adr-card adr-card--main" data-ticker="PBR-A">
+                        <div class="adr-header">
+                            <h3>PBR-A</h3>
+                            <span class="adr-type">Principal</span>
+                        </div>
+                        <div class="adr-inputs">
+                            <div class="input-group">
+                                <label>Fechamento:</label>
+                                <input type="number" step="0.01" placeholder="0.00" class="closing-input" onchange="updateMainAdr('PBR-A', 'closing', this.value)">
+                                <span class="input-status" id="pbr-a-closing-status"></span>
+                            </div>
+                            <div class="input-group">
+                                <label>After-Market:</label>
+                                <input type="number" step="0.01" placeholder="0.00" class="after-input" onchange="updateMainAdr('PBR-A', 'after', this.value)">
+                                <span class="input-status" id="pbr-a-after-status"></span>
+                            </div>
+                            <div class="input-group">
+                                <label>Pré-Market:</label>
+                                <input type="number" step="0.01" placeholder="0.00" class="pre-input" onchange="updateMainAdr('PBR-A', 'pre', this.value)">
+                                <span class="input-status" id="pbr-a-pre-status"></span>
+                            </div>
+                        </div>
+                        <div class="adr-result">
+                            <span class="result-label">Contribuição:</span>
+                            <span class="result-value" id="pbr-a-contribution">0.00%</span>
+                        </div>
+                    </div>
+
+                    <!-- BBD -->
+                    <div class="adr-card adr-card--main" data-ticker="BBD">
+                        <div class="adr-header">
+                            <h3>BBD</h3>
+                            <span class="adr-type">Principal</span>
+                        </div>
+                        <div class="adr-inputs">
+                            <div class="input-group">
+                                <label>Fechamento:</label>
+                                <input type="number" step="0.01" placeholder="0.00" class="closing-input" onchange="updateMainAdr('BBD', 'closing', this.value)">
+                                <span class="input-status" id="bbd-closing-status"></span>
+                            </div>
+                            <div class="input-group">
+                                <label>After-Market:</label>
+                                <input type="number" step="0.01" placeholder="0.00" class="after-input" onchange="updateMainAdr('BBD', 'after', this.value)">
+                                <span class="input-status" id="bbd-after-status"></span>
+                            </div>
+                            <div class="input-group">
+                                <label>Pré-Market:</label>
+                                <input type="number" step="0.01" placeholder="0.00" class="pre-input" onchange="updateMainAdr('BBD', 'pre', this.value)">
+                                <span class="input-status" id="bbd-pre-status"></span>
+                            </div>
+                        </div>
+                        <div class="adr-result">
+                            <span class="result-label">Contribuição:</span>
+                            <span class="result-value" id="bbd-contribution">0.00%</span>
+                        </div>
+                    </div>
+
+                    <!-- ABEV -->
+                    <div class="adr-card adr-card--main" data-ticker="ABEV">
+                        <div class="adr-header">
+                            <h3>ABEV</h3>
+                            <span class="adr-type">Principal</span>
+                        </div>
+                        <div class="adr-inputs">
+                            <div class="input-group">
+                                <label>Fechamento:</label>
+                                <input type="number" step="0.01" placeholder="0.00" class="closing-input" onchange="updateMainAdr('ABEV', 'closing', this.value)">
+                                <span class="input-status" id="abev-closing-status"></span>
+                            </div>
+                            <div class="input-group">
+                                <label>After-Market:</label>
+                                <input type="number" step="0.01" placeholder="0.00" class="after-input" onchange="updateMainAdr('ABEV', 'after', this.value)">
+                                <span class="input-status" id="abev-after-status"></span>
+                            </div>
+                            <div class="input-group">
+                                <label>Pré-Market:</label>
+                                <input type="number" step="0.01" placeholder="0.00" class="pre-input" onchange="updateMainAdr('ABEV', 'pre', this.value)">
+                                <span class="input-status" id="abev-pre-status"></span>
+                            </div>
+                        </div>
+                        <div class="adr-result">
+                            <span class="result-label">Contribuição:</span>
+                            <span class="result-value" id="abev-contribution">0.00%</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ADRs Secundários -->
+            <section class="section section--adrs-secondary">
+                <div class="section-header">
+                    <h2>📈 ADRs Secundários (Liquidez Moderada)</h2>
+                    <div class="section-info">
+                        <span class="weight-info">Peso: Ajustado por Liquidez</span>
+                        <span class="status-indicator" id="secondaryAdrsStatus">✅</span>
+                    </div>
+                </div>
+                
+                <div class="adrs-grid" id="secondaryAdrsGrid">
+                    <!-- ERJ -->
+                    <div class="adr-card adr-card--secondary" data-ticker="ERJ">
+                        <div class="adr-header">
+                            <h3>ERJ</h3>
+                            <span class="adr-type">Secundário</span>
+                            <span class="liquidity-weight">Peso: 60%</span>
+                        </div>
+                        <div class="adr-inputs">
+                            <div class="input-group">
+                                <label>Fechamento:</label>
+                                <input type="number" step="0.01" placeholder="0.00" class="closing-input" onchange="updateSecondaryAdr('ERJ', 'closing', this.value)">
+                                <span class="input-status" id="erj-closing-status"></span>
+                            </div>
+                            <div class="input-group">
+                                <label>After-Market:</label>
+                                <input type="number" step="0.01" placeholder="0.00" class="after-input" onchange="updateSecondaryAdr('ERJ', 'after', this.value)">
+                                <span class="input-status" id="erj-after-status"></span>
+                            </div>
+                            <div class="input-group">
+                                <label>Pré-Market:</label>
+                                <input type="number" step="0.01" placeholder="0.00" class="pre-input" onchange="updateSecondaryAdr('ERJ', 'pre', this.value)">
+                                <span class="input-status" id="erj-pre-status"></span>
+                            </div>
+                        </div>
+                        <div class="adr-result">
+                            <span class="result-label">Contribuição:</span>
+                            <span class="result-value" id="erj-contribution">0.00%</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Indicadores Macro -->
+            <section class="section section--macro">
+                <div class="section-header">
+                    <h2>🌍 Indicadores Macro</h2>
+                    <div class="section-info">
+                        <span class="weight-info" id="macroWeightDisplay">Peso: 25%</span>
+                        <span class="status-indicator" id="macroStatus">✅</span>
+                    </div>
+                </div>
+                
+                <div class="macro-grid">
+                    <!-- VIX -->
+                    <div class="macro-card" data-indicator="vix">
+                        <div class="macro-header">
+                            <h3>VIX</h3>
+                            <span class="macro-type">Volatilidade</span>
+                        </div>
+                        <div class="macro-input">
+                            <input type="number" step="0.01" placeholder="0.00" onchange="updateMacro('vix', this.value)">
+                        </div>
+                        <div class="macro-result">
+                            <span class="result-label">Contribuição:</span>
+                            <span class="result-value" id="vix-contribution">0.00%</span>
+                        </div>
+                    </div>
+
+                    <!-- EWZ -->
+                    <div class="macro-card" data-indicator="ewz">
+                        <div class="macro-header">
+                            <h3>EWZ</h3>
+                            <span class="macro-type">ETF Brasil</span>
+                        </div>
+                        <div class="macro-input">
+                            <input type="number" step="0.01" placeholder="0.00" onchange="updateMacro('ewz', this.value)">
+                        </div>
+                        <div class="macro-result">
+                            <span class="result-label">Contribuição:</span>
+                            <span class="result-value" id="ewz-contribution">0.00%</span>
+                        </div>
+                    </div>
+
+                    <!-- S&P 500 -->
+                    <div class="macro-card" data-indicator="sp500">
+                        <div class="macro-header">
+                            <h3>S&P 500</h3>
+                            <span class="macro-type">Índice EUA</span>
+                        </div>
+                        <div class="macro-input">
+                            <input type="number" step="0.01" placeholder="0.00" onchange="updateMacro('sp500', this.value)">
+                        </div>
+                        <div class="macro-result">
+                            <span class="result-label">Contribuição:</span>
+                            <span class="result-value" id="sp500-contribution">0.00%</span>
+                        </div>
+                    </div>
+
+                    <!-- Petróleo -->
+                    <div class="macro-card" data-indicator="oil">
+                        <div class="macro-header">
+                            <h3>Petróleo</h3>
+                            <span class="macro-type">CL=F</span>
+                        </div>
+                        <div class="macro-input">
+                            <input type="number" step="0.01" placeholder="0.00" onchange="updateMacro('oil', this.value)">
+                        </div>
+                        <div class="macro-result">
+                            <span class="result-label">Contribuição:</span>
+                            <span class="result-value" id="oil-contribution">0.00%</span>
+                        </div>
+                    </div>
+
+                    <!-- DXY -->
+                    <div class="macro-card" data-indicator="dxy">
+                        <div class="macro-header">
+                            <h3>DXY</h3>
+                            <span class="macro-type">Dólar</span>
+                        </div>
+                        <div class="macro-input">
+                            <input type="number" step="0.01" placeholder="0.00" onchange="updateMacro('dxy', this.value)">
+                        </div>
+                        <div class="macro-result">
+                            <span class="result-label">Contribuição:</span>
+                            <span class="result-value" id="dxy-contribution">0.00%</span>
+                        </div>
+                    </div>
+
+                    <!-- Gold -->
+                    <div class="macro-card" data-indicator="gold">
+                        <div class="macro-header">
+                            <h3>Gold</h3>
+                            <span class="macro-type">GC=F</span>
+                        </div>
+                        <div class="macro-input">
+                            <input type="number" step="0.01" placeholder="0.00" onchange="updateMacro('gold', this.value)">
+                        </div>
+                        <div class="macro-result">
+                            <span class="result-label">Contribuição:</span>
+                            <span class="result-value" id="gold-contribution">0.00%</span>
+                        </div>
+                    </div>
+
+                    <!-- Iron Ore -->
+                    <div class="macro-card" data-indicator="iron">
+                        <div class="macro-header">
+                            <h3>Iron Ore</h3>
+                            <span class="macro-type">HG=F</span>
+                        </div>
+                        <div class="macro-input">
+                            <input type="number" step="0.01" placeholder="0.00" onchange="updateMacro('iron', this.value)">
+                        </div>
+                        <div class="macro-result">
+                            <span class="result-label">Contribuição:</span>
+                            <span class="result-value" id="iron-contribution">0.00%</span>
+                        </div>
+                    </div>
+
+                    <!-- WINFUT -->
+                    <div class="macro-card" data-indicator="winfut">
+                        <div class="macro-header">
+                            <h3>WINFUT</h3>
+                            <span class="macro-type">Ibovespa</span>
+                        </div>
+                        <div class="macro-input">
+                            <input type="number" step="0.01" placeholder="0.00" onchange="updateMacro('winfut', this.value)">
+                        </div>
+                        <div class="macro-result">
+                            <span class="result-label">Contribuição:</span>
+                            <span class="result-value" id="winfut-contribution">0.00%</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Resultado Final -->
+            <section class="section section--result">
+                <div class="result-panel">
+                    <div class="result-header">
+                        <h2>🎯 Saldo Remanescente Final</h2>
+                        <div class="result-timestamp" id="resultTimestamp"></div>
+                    </div>
+                    
+                    <div class="result-summary">
+                        <div class="result-item">
+                            <span class="result-label">ADRs Principais:</span>
+                            <span class="result-value" id="mainAdrsTotal">0.00%</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-label">ADRs Secundários:</span>
+                            <span class="result-value" id="secondaryAdrsTotal">0.00%</span>
+                        </div>
+                        <div class="result-item">
+                            <span class="result-label">Indicadores Macro:</span>
+                            <span class="result-value" id="macroTotal">0.00%</span>
+                        </div>
+                        <div class="result-item result-item--final">
+                            <span class="result-label">SALDO REMANESCENTE:</span>
+                            <span class="result-value result-value--final" id="finalResult">0.00%</span>
+                        </div>
+                    </div>
+                    
+                    <div class="result-actions">
+                        <button class="btn btn--primary" onclick="calculateResult()">🔄 Recalcular</button>
+                        <button class="btn btn--secondary" onclick="exportResult()">📤 Exportar</button>
+                        <button class="btn btn--secondary" onclick="saveData()">💾 Salvar</button>
+                        <button class="btn btn--secondary" onclick="loadData()">📥 Carregar</button>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Tab: Interpretação Macro -->
+        <div class="tab-content" id="macroTab" style="display: none;">
+            <section class="section section--interpretation">
+                <div class="interpretation-panel">
+                    <h2>📖 Interpretação Macro</h2>
+                    
+                    <div class="interpretation-content" id="interpretationContent">
+                        <div class="interpretation-item">
+                            <h3>📊 Análise de Mercado</h3>
+                            <p id="marketAnalysis">Insira dados para ver a análise de mercado...</p>
+                        </div>
+                        
+                        <div class="interpretation-item">
+                            <h3>🎯 Projeção do Mini Índice</h3>
+                            <p id="indexProjection">Calcule o saldo remanescente para ver a projeção...</p>
+                        </div>
+                        
+                        <div class="interpretation-item">
+                            <h3>⚠️ Alertas de Risco</h3>
+                            <p id="riskAlerts">Sistema de alertas será ativado após cálculo...</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="footer-content">
+                <div class="footer-info">
+                    <p>Calculadora de Saldo Remanescente ADR's v2.5</p>
+                    <p>Metodologia: Professor Deivson Pimentel</p>
+                    <p>Desenvolvido para traders profissionais</p>
+                </div>
+                <div class="footer-disclaimer">
+                    <p>⚠️ <strong>Aviso:</strong> Esta ferramenta é para análise técnica e fins educacionais. Não constitui recomendação de investimento. Trading envolve alto risco.</p>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Scripts -->
+    <script src="app.js"></script>
+</body>
+</html>
