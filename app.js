@@ -5524,9 +5524,13 @@ function addLiveUpdateStyles() {
 
 // Quotes Widget Service - Widget de Cotações Separado
 class QuotesWidgetService {
-    constructor() {
-        this.baseUrl = 'http://localhost:5000/api';
-        this.isUpdating = false;
+   constructor() {
+       // Configuração de ambiente
+       const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+       this.baseUrl = isProduction 
+           ? 'https://backendcalculadora-adrr.onrender.com/api'
+           : 'http://localhost:5000/api';
+       this.isUpdating = false;
     }
     
     async updateQuotes() {
@@ -6334,3 +6338,4 @@ function renderAdvancedWinfutInterface(data) {
     console.log('🎨 Interface visual das regiões renderizada');
     console.log('🔍 HTML inserido:', container.innerHTML.substring(0, 200) + '...');
 }
+
