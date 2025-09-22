@@ -1,0 +1,1315 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de Saldo Remanescente ADR's v2.5 - Análise Automática Fechamento + After + Pré-Market + VIX + Cenário Macro</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header Profissional v2.3 -->
+        <header class="header-pro">
+            <div class="header-pro__content">
+                <div class="header-pro__icon">📊</div>
+                <div class="header-pro__text">
+                    <div class="header-pro__title-row">
+                        <h1>Calculadora de Saldo Remanescente ADR's v2.5</h1>
+                        <span class="badge badge--pro">v2.5</span>
+                    </div>
+                    
+                    <!-- Indicador de Status Unificado -->
+                    <div class="status-indicators">
+                        <span class="status-badge" id="dataStatus">
+                            💾 Dados Salvos
+                        </span>
+                    </div>
+                    
+                    <p>Análise Automática Fechamento ATUAL + After (Manual) + Pré-Market (Manual) + VIX + Cenário Macro</p>
+                    <div class="header-pro__info">
+                        <div class="header-pro__datetime" id="currentDateTime"></div>
+                        <div class="header-pro__confidence">
+                            <span>Índice de Confiabilidade:</span>
+                            <span class="confidence-value" id="confidenceValue">0%</span>
+                        </div>
+                    <div class="header-pro__controls">
+                        <div class="header-pro__tabs">
+                            <button class="tab-button tab-button--active" id="tabCalculator" onclick="switchTab('calculator')">
+                                📊 Calculadora
+                            </button>
+                            <button class="tab-button" id="tabMacro" onclick="switchTab('macro')">
+                                📖 Interpretação Macro
+                            </button>
+                        </div>
+                        <div class="header-pro__settings">
+                            <button class="settings-toggle" id="settingsToggle" onclick="toggleSettings()" title="Configurações Avançadas">
+                                ⚙️
+                            </button>
+                        </div>
+                        <div class="header-pro__session-controls">
+                            <div class="header-pro__auto-save">
+                                <label class="auto-save-label" title="Auto-salvar dados automaticamente">
+                                    <input type="checkbox" id="autoSave" checked>
+                                    <span class="auto-save-text">Auto-save</span>
+                                </label>
+                            </div>
+                            <button class="btn btn--primary btn--small" onclick="saveSession()" title="Salvar Análise">
+                                💾
+                            </button>
+                            <button class="btn btn--secondary btn--small" onclick="loadSession()" title="Carregar Última Sessão">
+                                📂
+                            </button>
+                            <button class="btn btn--outline btn--small" onclick="clearSession()" title="Nova Sessão">
+                                🔄
+                            </button>
+                        </div>
+                    </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Barra Lateral de Configurações -->
+        <div class="settings-sidebar" id="settingsSidebar">
+            <div class="settings-sidebar__header">
+                <h3>⚙️ Configurações Avançadas</h3>
+                <button class="settings-close" onclick="toggleSettings()" title="Fechar">
+                    ✕
+                </button>
+            </div>
+            <div class="settings-sidebar__content">
+                <div class="config-grid">
+                    <div class="config-item">
+                        <label class="form-label">Sensibilidade (Conservador → Agressivo)</label>
+                        <input type="range" min="0.5" max="2" step="0.1" value="1" class="range-input" id="sensibilityRange">
+                        <span class="range-value" id="sensibilityValue">1.0x</span>
+                        <div class="vix-sensitivity-info" id="vixSensitivityInfo">
+                            <small>Limite dinâmico baseado no VIX será aplicado automaticamente</small>
+                        </div>
+                    </div>
+                    <div class="config-item">
+                        <label class="form-label">
+                            <input type="checkbox" id="includeSecondary" checked> Incluir ADRs Secundários
+                        </label>
+                    </div>
+                    <div class="config-item">
+                        <label class="form-label">Peso Indicadores Macro</label>
+                        <input type="range" min="0" max="50" step="5" value="25" class="range-input" id="macroWeight">
+                        <span class="range-value" id="macroWeightValue">25%</span>
+                    </div>
+                    <div class="config-item">
+                        <label class="form-label">Peso VIX Ajustável</label>
+                        <input type="range" min="0" max="25" step="5" value="10" class="range-input" id="vixWeight">
+                        <span class="range-value" id="vixWeightValue">10%</span>
+                    </div>
+                    <div class="config-item">
+                        <label class="form-label">
+                            <input type="checkbox" id="autoAdjustVix" checked> Auto-ajuste VIX
+                        </label>
+                        <small>Ativar/desativar correlação automática VIX</small>
+                    </div>
+                    <div class="config-item">
+                        <label class="form-label">
+                            <input type="radio" name="analysisMode" value="complete" checked> Análise Completa
+                        </label>
+                        <label class="form-label">
+                            <input type="radio" name="analysisMode" value="primary"> Apenas ADRs Principais
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Overlay para fechar configurações -->
+        <div class="settings-overlay" id="settingsOverlay" onclick="toggleSettings()"></div>
+
+        <!-- Conteúdo das Abas -->
+        <div class="tab-content">
+            <!-- Aba Calculadora -->
+            <div class="tab-panel tab-panel--active" id="calculatorTab">
+                <!-- Painel VIX Smart (mantido) -->
+        <section class="vix-smart-section">
+            <div class="card">
+                <div class="card__header">
+                    <h3>🔮 VIX Smart Sensitivity - Ajuste Automático de Volatilidade</h3>
+                    <p>Sistema inteligente que ajusta sensibilidade baseado no índice de volatilidade CBOE</p>
+                </div>
+                <div class="card__body">
+                    <div class="vix-smart-grid">
+                        <div class="vix-inputs">
+                            <div class="vix-input-group">
+                                <label class="form-label">VIX Variação (%)</label>
+                                <input type="number" step="0.01" min="-20" max="20" class="form-control vix-input" id="vixVariation" placeholder="0,00%">
+                                <small class="input-hint">Variação do VIX em %</small>
+                            </div>
+                            <div class="vix-input-group">
+                                <label class="form-label">VIX Valor Absoluto</label>
+                                <input type="number" step="0.1" min="5" max="80" class="form-control vix-input" id="vixAbsolute" placeholder="20.0">
+                                <small class="input-hint">Valor atual do VIX</small>
+                            </div>
+                        </div>
+                        <div class="vix-interpretation">
+                            <div class="vix-recommendation" id="vixRecommendation">
+                                <div class="vix-rec-icon">🟡</div>
+                                <div class="vix-rec-text">
+                                    <h4>Aguardando dados VIX</h4>
+                                    <p>Insira os valores do VIX para ativação do ajuste automático</p>
+                                </div>
+                            </div>
+                            <div class="vix-alerts" id="vixAlerts">
+                                <!-- Alertas VIX dinâmicos -->
+                            </div>
+                            
+                            <!-- Regime de Volatilidade Adaptativo v2.5 -->
+                            <div class="volatility-regime" id="volatilityRegime">
+                                <div class="regime-header">
+                                    <h4>🔄 Regime de Volatilidade</h4>
+                                    <div class="regime-status" id="regimeStatus">
+                                        <span class="regime-icon" id="regimeIcon">🟡</span>
+                                        <span class="regime-text" id="regimeText">Normal</span>
+                                    </div>
+                                </div>
+                                <div class="regime-details" id="regimeDetails">
+                                    <div class="regime-metric">
+                                        <span class="metric-label">Multiplicador:</span>
+                                        <span class="metric-value" id="regimeMultiplier">1.0x</span>
+                                    </div>
+                                    <div class="regime-metric">
+                                        <span class="metric-label">Volatilidade ADRs:</span>
+                                        <span class="metric-value" id="adrsVolatility">--</span>
+                                    </div>
+                                    <div class="regime-metric">
+                                        <span class="metric-label">Peso Macro Ajustado:</span>
+                                        <span class="metric-value" id="adjustedMacroWeight">--</span>
+                                    </div>
+                                    <div class="regime-metric">
+                                        <span class="metric-label">Timing Effect:</span>
+                                        <span class="metric-value" id="timingEffect">--</span>
+                                    </div>
+                                    <div class="regime-metric">
+                                        <span class="metric-label">Período:</span>
+                                        <span class="metric-value" id="timingPeriod">--</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- Dados de Mercado Consolidados v2.3 -->
+        <section class="market-data-section">
+            <div class="card">
+                <div class="card__header">
+                    <h3>📊 Dados de Mercado v2.3</h3>
+                    <p>Integração com APIs financeiras e cotações em tempo real</p>
+                </div>
+                <div class="card__body">
+                    <!-- Controles de Dados Ao Vivo -->
+                    <div class="market-data-controls">
+                        <div class="market-controls-grid">
+                            <div class="market-control-group">
+                                <button id="startLiveData" class="btn btn--primary">
+                                    <span class="btn-icon">🔄</span>
+                                    <span class="btn-text">Ativar Dados Ao Vivo</span>
+                                </button>
+                                <button id="stopLiveData" class="btn btn--secondary" disabled>
+                                    <span class="btn-icon">⏹️</span>
+                                    <span class="btn-text">Parar Dados Ao Vivo</span>
+                                </button>
+                                <button id="updateQuotes" class="btn btn--outline">
+                                    <span class="btn-icon">📊</span>
+                                    <span class="btn-text">Atualizar Cotações</span>
+                                </button>
+                            </div>
+                            
+                            <div class="market-status-group">
+                                <div class="market-status-indicator" id="liveDataStatus">
+                                    <span class="status-icon">📡</span>
+                                    <span class="status-text">Desconectado</span>
+                                </div>
+                                <div class="market-last-update" id="lastUpdateTime">
+                                    Última atualização: Nunca
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="market-data-info">
+                            <div class="info-item">
+                                <span class="info-label">🕐 Atualização:</span>
+                                <span class="info-value">A cada 30 segundos</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">📊 Dados:</span>
+                                <span class="info-value">VIX, Gold, Iron Ore, ADRs, Macro</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">🌐 Fonte:</span>
+                                <span class="info-value">Yahoo Finance (yfinance)</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Cotações em Tempo Real -->
+                    <div class="market-quotes-section">
+                        <div class="quotes-header">
+                            <h4>📈 Cotações em Tempo Real</h4>
+                            <div class="quotes-status" id="quotesStatus">
+                                <span class="status-icon">📡</span>
+                                <span class="status-text">Aguardando atualização</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Aviso sobre delay do yfinance -->
+                        <div class="yfinance-warning">
+                            <div class="warning-icon">⚠️</div>
+                            <div class="warning-content">
+                                <strong>Importante:</strong> Dados do Yahoo Finance têm delay de 15 minutos para versão gratuita. 
+                                Para dados em tempo real, é necessária assinatura paga.
+                            </div>
+                        </div>
+                        
+                        <div class="quotes-grid">
+                            <!-- VIX -->
+                            <div class="quote-card" id="quote-vix">
+                                <div class="quote-header">
+                                    <span class="quote-symbol">VIX</span>
+                                    <span class="quote-name">Volatility Index</span>
+                                </div>
+                                <div class="quote-price" id="vix-price">--</div>
+                                <div class="quote-change" id="vix-change">--</div>
+                            </div>
+                            
+                            <!-- Gold -->
+                            <div class="quote-card" id="quote-gold">
+                                <div class="quote-header">
+                                    <span class="quote-symbol">GOLD</span>
+                                    <span class="quote-name">Gold Futures</span>
+                                </div>
+                                <div class="quote-price" id="gold-price">--</div>
+                                <div class="quote-change" id="gold-change">--</div>
+                            </div>
+                            
+                            <!-- Iron Ore -->
+                            <div class="quote-card" id="quote-iron">
+                                <div class="quote-header">
+                                    <span class="quote-symbol">IRON</span>
+                                    <span class="quote-name">Iron Ore</span>
+                                </div>
+                                <div class="quote-price" id="iron-price">--</div>
+                                <div class="quote-change" id="iron-change">--</div>
+                            </div>
+                            
+                            <!-- S&P 500 -->
+                            <div class="quote-card" id="quote-sp500">
+                                <div class="quote-header">
+                                    <span class="quote-symbol">S&P500</span>
+                                    <span class="quote-name">S&P 500 Index</span>
+                                </div>
+                                <div class="quote-price" id="sp500-price">--</div>
+                                <div class="quote-change" id="sp500-change">--</div>
+                            </div>
+                            
+                            <!-- EWZ -->
+                            <div class="quote-card" id="quote-ewz">
+                                <div class="quote-header">
+                                    <span class="quote-symbol">EWZ</span>
+                                    <span class="quote-name">Brazil ETF</span>
+                                </div>
+                                <div class="quote-price" id="ewz-price">--</div>
+                                <div class="quote-change" id="ewz-change">--</div>
+                            </div>
+                            
+                            <!-- Oil -->
+                            <div class="quote-card" id="quote-oil">
+                                <div class="quote-header">
+                                    <span class="quote-symbol">OIL</span>
+                                    <span class="quote-name">WTI Crude Oil</span>
+                                </div>
+                                <div class="quote-price" id="oil-price">--</div>
+                                <div class="quote-change" id="oil-change">--</div>
+                            </div>
+                            
+                            <!-- DXY -->
+                            <div class="quote-card" id="quote-dxy">
+                                <div class="quote-header">
+                                    <span class="quote-symbol">DXY</span>
+                                    <span class="quote-name">Dollar Index</span>
+                                </div>
+                                <div class="quote-price" id="dxy-price">--</div>
+                                <div class="quote-change" id="dxy-change">--</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Segunda linha - ADRs Brasileiros -->
+                        <div class="quotes-grid quotes-grid--adrs">
+                            <!-- VALE -->
+                            <div class="quote-card" id="quote-vale">
+                                <div class="quote-header">
+                                    <span class="quote-symbol">VALE</span>
+                                    <span class="quote-name">Vale S.A.</span>
+                                </div>
+                                <div class="quote-price" id="vale-price">--</div>
+                                <div class="quote-change" id="vale-change">--</div>
+                            </div>
+                            
+                            <!-- ITUB -->
+                            <div class="quote-card" id="quote-itub">
+                                <div class="quote-header">
+                                    <span class="quote-symbol">ITUB</span>
+                                    <span class="quote-name">Itaú Unibanco</span>
+                                </div>
+                                <div class="quote-price" id="itub-price">--</div>
+                                <div class="quote-change" id="itub-change">--</div>
+                            </div>
+                            
+                            <!-- PBR -->
+                            <div class="quote-card" id="quote-pbr">
+                                <div class="quote-header">
+                                    <span class="quote-symbol">PBR</span>
+                                    <span class="quote-name">Petrobras PN</span>
+                                </div>
+                                <div class="quote-price" id="pbr-price">--</div>
+                                <div class="quote-change" id="pbr-change">--</div>
+                            </div>
+                            
+                            <!-- PBR-A -->
+                            <div class="quote-card" id="quote-pbr-a">
+                                <div class="quote-header">
+                                    <span class="quote-symbol">PBR-A</span>
+                                    <span class="quote-name">Petrobras ON</span>
+                                </div>
+                                <div class="quote-price" id="pbr-a-price">--</div>
+                                <div class="quote-change" id="pbr-a-change">--</div>
+                            </div>
+                            
+                            <!-- BBD -->
+                            <div class="quote-card" id="quote-bbd">
+                                <div class="quote-header">
+                                    <span class="quote-symbol">BBD</span>
+                                    <span class="quote-name">Bradesco PN</span>
+                                </div>
+                                <div class="quote-price" id="bbd-price">--</div>
+                                <div class="quote-change" id="bbd-change">--</div>
+                            </div>
+                            
+                            <!-- ABEV -->
+                            <div class="quote-card" id="quote-abev">
+                                <div class="quote-header">
+                                    <span class="quote-symbol">ABEV</span>
+                                    <span class="quote-name">Ambev S.A.</span>
+                                </div>
+                                <div class="quote-price" id="abev-price">--</div>
+                                <div class="quote-change" id="abev-change">--</div>
+                            </div>
+                            
+                            <!-- BBDO -->
+                            <div class="quote-card" id="quote-bbdo">
+                                <div class="quote-header">
+                                    <span class="quote-symbol">BBDO</span>
+                                    <span class="quote-name">Bradesco ON</span>
+                                </div>
+                                <div class="quote-price" id="bbdo-price">--</div>
+                                <div class="quote-change" id="bbdo-change">--</div>
+                            </div>
+                            
+                            <!-- ERJ -->
+                            <div class="quote-card" id="quote-erj">
+                                <div class="quote-header">
+                                    <span class="quote-symbol">ERJ</span>
+                                    <span class="quote-name">Embraer</span>
+                                </div>
+                                <div class="quote-price" id="erj-price">--</div>
+                                <div class="quote-change" id="erj-change">--</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ADRs Principais com Validação (mantido) -->
+        <section class="adrs-primary-section">
+            <div class="card">
+                <div class="card__header">
+                    <h2>🎯 ADRs Principais (Alta Liquidez - Peso 100%)</h2>
+                    <p>ADRs de máxima confiabilidade com validação After-Market vs Pré-Market</p>
+                </div>
+                <div class="card__body">
+                    <div class="adrs-table-container">
+                        <table class="adrs-table">
+                            <thead>
+                <tr>
+                    <th>Ticker ADR</th>
+                    <th>Empresa</th>
+                    <th>B3 (Peso)</th>
+                    <th>Liquidez</th>
+                    <th class="closing-header">Fechamento (%)</th>
+                    <th class="after-market-header">After-Market (%)</th>
+                    <th class="pre-market-header">Pré-Market (%)</th>
+                    <th class="validation-header">Status</th>
+                    <th>Contribuição Final</th>
+                    <th>Sem Neg.</th>
+                </tr>
+                            </thead>
+                            <tbody id="adrsMainTable">
+                                <!-- Preenchido pelo JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ADRs Secundários com Validação (mantido) -->
+        <section class="adrs-secondary-section" id="secondarySection">
+            <div class="card">
+                <div class="card__header">
+                    <h2>📊 ADRs Secundários (Liquidez Moderada - Peso Ajustado)</h2>
+                    <p>ADRs com peso reduzido devido à menor liquidez - Com validação After vs Pré</p>
+                </div>
+                <div class="card__body">
+                    <div class="adrs-table-container">
+                        <table class="adrs-table">
+                            <thead>
+                <tr>
+                    <th>Ticker ADR</th>
+                    <th>Empresa</th>
+                    <th>B3 (Peso Orig.)</th>
+                    <th>Liquidez</th>
+                    <th class="closing-header">Fechamento (%)</th>
+                    <th class="after-market-header">After-Market (%)</th>
+                    <th class="pre-market-header">Pré-Market (%)</th>
+                    <th class="validation-header">Status</th>
+                    <th>Contribuição Final</th>
+                    <th>Sem Neg.</th>
+                </tr>
+                            </thead>
+                            <tbody id="adrsSecondaryTable">
+                                <!-- Preenchido pelo JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Análise de Spread Detalhada v2.3 -->
+        <section class="spread-analysis-section">
+            <div class="card">
+                <div class="card__header">
+                    <h2>📊 Análise de Spread Detalhada v2.3</h2>
+                    <p>Análise precisa baseada em preços reais: Fechamento → After-Market → Pré-Market</p>
+                </div>
+                <div class="card__body">
+                    <div id="spreadAnalysisContainer">
+                        <div class="spread-analysis-placeholder">
+                            <div class="placeholder-icon">📈</div>
+                            <div class="placeholder-text">
+                                <h4>Análise de Spread Aguardando Dados</h4>
+                                <p>Insira os preços de fechamento e variações para ver a análise detalhada de spreads</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Resumo da Validação (compacto) -->
+        <section class="validation-summary-section">
+            <div class="card validation-summary-beautiful">
+                <div class="validation-summary-header">
+                    <h3>📊 RESUMO ADR'S</h3>
+                </div>
+                <div class="validation-summary-content">
+                    <div class="validation-item-beautiful confirmed">
+                        <div class="validation-icon-beautiful">✅</div>
+                        <div class="validation-number" id="confirmedCount">0</div>
+                        <div class="validation-text">Confirmados</div>
+                    </div>
+                    <div class="validation-item-beautiful weakened">
+                        <div class="validation-icon-beautiful">⚠️</div>
+                        <div class="validation-number" id="weakenedCount">0</div>
+                        <div class="validation-text">Enfraquecidos</div>
+                    </div>
+                    <div class="validation-item-beautiful diverged">
+                        <div class="validation-icon-beautiful">🔴</div>
+                        <div class="validation-number" id="divergedCount">0</div>
+                        <div class="validation-text">Divergências</div>
+                    </div>
+                    <div class="validation-item-beautiful incomplete">
+                        <div class="validation-icon-beautiful">⚪</div>
+                        <div class="validation-number" id="incompleteCount">0</div>
+                        <div class="validation-text">Incompletos</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- Indicadores Macro Expandidos v2.3 - NOVOS INDICADORES -->
+        <section class="macro-section">
+            <div class="card">
+                <div class="card__header">
+                    <h2>🌎 Indicadores Macro v2.3 (Gold + Iron Ore + VIX Smart)</h2>
+                    <p>Dados complementares para análise contextual incluindo commodities estratégicas</p>
+                </div>
+                <div class="card__body">
+                    <div class="macro-grid">
+                        <div class="macro-item">
+                            <div class="macro-header">
+                                <h4>EWZ</h4>
+                                <span class="macro-weight">Peso: 25%</span>
+                            </div>
+                            <p class="macro-desc">EWZ Fechamento Anterior - Correlação direta</p>
+                            <input type="number" step="0.01" min="-10" max="10" class="form-control macro-input" id="macro-EWZ_CLOSE" placeholder="0,00%">
+                            <div class="macro-impact macro-impact--positive">Impacto: Direto</div>
+                        </div>
+                        
+                        <div class="macro-item">
+                            <div class="macro-header">
+                                <h4>S&P 500</h4>
+                                <span class="macro-weight">Peso: 15%</span>
+                            </div>
+                            <p class="macro-desc">S&P 500 Futures - Sentimento global</p>
+                            <input type="number" step="0.01" min="-10" max="10" class="form-control macro-input" id="macro-ES=F" placeholder="0,00%">
+                            <div class="macro-impact macro-impact--positive">Impacto: Correlacionado</div>
+                        </div>
+                        
+                        <div class="macro-item">
+                            <div class="macro-header">
+                                <h4>Petróleo WTI</h4>
+                                <span class="macro-weight">Peso: 10%</span>
+                            </div>
+                            <p class="macro-desc">Commodities - Impacta VALE e PBR</p>
+                            <input type="number" step="0.01" min="-10" max="10" class="form-control macro-input" id="macro-CL=F" placeholder="0,00%">
+                            <div class="macro-impact macro-impact--sectoral">Impacto: Setorial</div>
+                        </div>
+                        
+                        <div class="macro-item">
+                            <div class="macro-header">
+                                <h4>DXY (Dólar)</h4>
+                                <span class="macro-weight">Peso: 15%</span>
+                            </div>
+                            <p class="macro-desc">Índice Dólar - Correlação inversa</p>
+                            <input type="number" step="0.01" min="-10" max="10" class="form-control macro-input" id="macro-DXY" placeholder="0,00%">
+                            <div class="macro-impact macro-impact--inverse">Impacto: Inverso</div>
+                        </div>
+
+                        <div class="macro-item macro-item--vix">
+                            <div class="macro-header">
+                                <h4>VIX</h4>
+                                <span class="macro-weight">Peso: 10%</span>
+                            </div>
+                            <p class="macro-desc">VIX (CBOE Volatility) - Correlação inversa com índices</p>
+                            <input type="number" step="0.01" min="-20" max="20" class="form-control macro-input vix-macro-input" id="macro-VIX" placeholder="0,00%">
+                            <div class="macro-impact macro-impact--volatility">Impacto: Volatilidade</div>
+                        </div>
+
+                        <!-- NOVO: Gold Futures -->
+                        <div class="macro-item macro-item--gold">
+                            <div class="macro-header">
+                                <h4>🥇 Ouro (Gold)</h4>
+                                <span class="macro-weight">Peso: 10%</span>
+                            </div>
+                            <p class="macro-desc">Safe haven - Aversão a risco global</p>
+                            <input type="number" step="0.01" min="-10" max="10" class="form-control macro-input gold-macro-input" id="macro-GC=F" placeholder="0,00%">
+                            <div class="macro-impact macro-impact--inverse">Impacto: Inverso</div>
+                        </div>
+
+                        <!-- NOVO: Iron Ore -->
+                        <div class="macro-item macro-item--iron">
+                            <div class="macro-header">
+                                <h4>⛏️ Iron Ore</h4>
+                                <span class="macro-weight">Peso: 15%</span>
+                            </div>
+                            <p class="macro-desc">Impacta diretamente VALE3 e commodities brasileiras</p>
+                            <input type="number" step="0.01" min="-10" max="10" class="form-control macro-input iron-macro-input" id="macro-TIOC1" placeholder="0,00%">
+                            <div class="macro-impact macro-impact--positive">Impacto: Direto</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Projeção WINFUT - Mini Índice Futuro (OPCIONAL) -->
+        <section class="winfut-projection-section" id="winfut-section" style="display: none;">
+            <div class="card">
+                <div class="card__header">
+                    <div class="winfut-header-controls">
+                        <div class="winfut-title-section">
+                            <h2>📈 Projeção WINFUT - Mini Índice Futuro</h2>
+                            <p>Insira o fechamento do WINFUT manualmente e veja a projeção automática</p>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="toggleWinfutWidget()" id="winfut-close-btn">
+                            ✖ Fechar Widget
+                        </button>
+                    </div>
+                </div>
+                <div class="card__body">
+                    <div class="winfut-grid">
+                        <!-- Fechamento Manual WINFUT -->
+                        <div class="winfut-card winfut-card--current">
+                            <div class="winfut-header">
+                                <h4>Fechamento WINFUT</h4>
+                                <span class="winfut-time" id="winfut-time">Manual</span>
+                            </div>
+                            <div class="winfut-input-container">
+                                <input type="number" 
+                                       id="winfut-closing-price" 
+                                       class="winfut-input" 
+                                       placeholder="Ex: 145.500"
+                                       step="0.1">
+                                <label for="winfut-closing-price" class="winfut-input-label">Pontos</label>
+                            </div>
+                            <div class="winfut-variation" id="winfut-current-variation">--</div>
+                        </div>
+                        
+                        <!-- Variação Calculadora -->
+                        <div class="winfut-card winfut-card--variation">
+                            <div class="winfut-header">
+                                <h4>Variação Calculadora</h4>
+                                <span class="winfut-confidence" id="winfut-confidence">--</span>
+                            </div>
+                            <div class="winfut-percentage" id="winfut-calculator-variation">--</div>
+                            <div class="winfut-description" id="winfut-description">--</div>
+                        </div>
+                        
+                        <!-- Projeção Final -->
+                        <div class="winfut-card winfut-card--projection">
+                            <div class="winfut-header">
+                                <h4>Projeção de Abertura</h4>
+                                <span class="winfut-probability" id="winfut-probability">--</span>
+                            </div>
+                            <div class="winfut-projection-price" id="winfut-projection-price">--</div>
+                            <div class="winfut-points-change" id="winfut-points-change">--</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Recomendação Operacional -->
+                    <div class="winfut-recommendation" id="winfut-recommendation">
+                        <div class="recommendation-header">
+                            <h4>Recomendação Operacional</h4>
+                        </div>
+                        <div class="recommendation-content" id="winfut-recommendation-content">
+                            Aguardando dados...
+                        </div>
+                    </div>
+                    
+                    <!-- ===== SISTEMA ADICIONAL: DUPLA PROJEÇÃO WINFUT ===== -->
+                    <div class="winfut-dual-section" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(0,0,0,0.1);">
+                        <div class="dual-projection-header">
+                            <h4>🎯 Análise de Dupla Projeção (ADICIONAL)</h4>
+                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="winfutDualProjection.toggleDualProjection()" id="dual-projection-toggle">
+                                Ativar Dupla Projeção
+                            </button>
+                        </div>
+                        
+                        <!-- Indicador de Dupla Projeção -->
+                        <div class="dual-projection-indicator" id="winfut-dual-indicator" style="display: none;">
+                            <!-- Será preenchido dinamicamente quando ativado -->
+                        </div>
+                        
+                        <!-- Recomendação com Regiões Médias -->
+                        <div class="region-recommendation" id="winfut-region-recommendation" style="display: none;">
+                            <!-- Será preenchido dinamicamente quando ativado -->
+                        </div>
+                    </div>
+                    
+                    <!-- Regiões Dinâmicas Integradas (ORIGINAL) -->
+                    <div id="winfut-regions-container" style="margin-top: 20px;">
+                        <!-- Será preenchido dinamicamente -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- Painel de Cálculos Avançados com Validação (mantido) -->
+        <section class="calculations-advanced-section">
+            <div class="card">
+                <div class="card__header">
+                    <div class="calc-header-controls">
+                        <h2>📈 Painel de Cálculos Avançados com Validação v2.3</h2>
+                        <button type="button" class="btn btn-sm btn-success" onclick="toggleWinfutWidget()" id="toggleWinfutWidget">
+                            📈 Ativar Projeção
+                        </button>
+                    </div>
+                </div>
+                <div class="card__body">
+                    <div class="calculations-advanced-grid">
+                        <div class="calc-breakdown">
+                            <h4>Breakdown Detalhado com Validação + VIX + Gold/Iron</h4>
+                            <div class="breakdown-item">
+                                <span class="breakdown-label">ADRs Principais:</span>
+                                <div class="breakdown-values">
+                                    <span class="breakdown-value" id="breakdownMain">+0,0000%</span>
+                                    <span class="breakdown-confidence" id="confidenceMain">(Confiança: 95%)</span>
+                                </div>
+                            </div>
+                            <div class="breakdown-item">
+                                <span class="breakdown-label">ADRs Secundários:</span>
+                                <div class="breakdown-values">
+                                    <span class="breakdown-value" id="breakdownSecondary">+0,0000%</span>
+                                    <span class="breakdown-confidence" id="confidenceSecondary">(Confiança: 60%)</span>
+                                </div>
+                            </div>
+                            <div class="breakdown-item">
+                                <span class="breakdown-label">Indicadores Macro:</span>
+                                <div class="breakdown-values">
+                                    <span class="breakdown-value" id="breakdownMacro">+0,0000%</span>
+                                    <span class="breakdown-confidence" id="confidenceMacro">(Confiança: 80%)</span>
+                                </div>
+                            </div>
+                            <div class="breakdown-item">
+                                <span class="breakdown-label">VIX Smart Adjustment:</span>
+                                <div class="breakdown-values">
+                                    <span class="breakdown-value" id="breakdownVix">+0,0000%</span>
+                                    <span class="breakdown-confidence" id="confidenceVix">(VIX Impact)</span>
+                                </div>
+                            </div>
+                            <div class="breakdown-separator"></div>
+                            <div class="breakdown-item breakdown-total">
+                                <span class="breakdown-label">SALDO FINAL VALIDADO + GOLD/IRON:</span>
+                                <div class="breakdown-values">
+                                    <span class="breakdown-value-final" id="saldoFinal">+0,0000%</span>
+                                    <span class="breakdown-confidence-final" id="confidenceFinal">(Confiança: 87%)</span>
+                                </div>
+                            </div>
+                            <div class="breakdown-item breakdown-info">
+                                <span class="breakdown-label">Saldo Remanescente ADRs After Market:</span>
+                                <div class="breakdown-values">
+                                    <span class="breakdown-value" id="saldoRemanescenteADRs">+0,0000%</span>
+                                    <span class="breakdown-confidence">(Soma direta das % - Apenas informativo)</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="calc-summary-advanced">
+                            <h4>Resumo Executivo v2.3</h4>
+                            <div class="summary-metrics">
+                                <div class="metric">
+                                    <span class="metric-label">Peso Total Ibovespa:</span>
+                                    <span class="metric-value" id="pesoTotalFinal">0,00%</span>
+                                </div>
+                                <div class="metric">
+                                    <span class="metric-label">ADRs com Dados:</span>
+                                    <span class="metric-value" id="adrsCount">0/10</span>
+                                </div>
+                                <div class="metric">
+                                    <span class="metric-label">ADRs Validados:</span>
+                                    <span class="metric-value" id="validatedCount">0/0</span>
+                                </div>
+                                <div class="metric">
+                                    <span class="metric-label">VIX Status:</span>
+                                    <span class="metric-value" id="vixStatus">Neutro</span>
+                                </div>
+                                <div class="metric">
+                                    <span class="metric-label">Sensibilidade Efetiva:</span>
+                                    <span class="metric-value" id="effectiveSensitivity">1.0x</span>
+                                </div>
+                                <div class="metric">
+                                    <span class="metric-label">Índice Confiabilidade:</span>
+                                    <div class="confidence-bar">
+                                        <div class="confidence-fill" id="confidenceBar"></div>
+                                        <span class="confidence-text" id="confidenceText">0%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- Indicador de Sentimento Simplificado -->
+        <section class="sentiment-section">
+            <div class="card">
+                <div class="card__header">
+                    <h2>📊 Sentimento de Mercado</h2>
+                    <p>Análise de medo/ganância baseada em VIX + Gold/Iron + ADRs</p>
+                </div>
+                <div class="card__body">
+                    <div class="sentiment-container">
+                        <!-- Score Principal -->
+                        <div class="sentiment-main">
+                            <div class="sentiment-score" id="sentimentScore">50</div>
+                            <div class="sentiment-label" id="sentimentLabel">Neutro</div>
+                        </div>
+                        
+                        <!-- Barra de Progresso -->
+                        <div class="sentiment-bar">
+                            <div class="sentiment-fill" id="sentimentFill"></div>
+                        </div>
+                        
+                        <!-- Labels -->
+                        <div class="sentiment-labels">
+                            <span class="sentiment-fear">😨 Medo</span>
+                            <span class="sentiment-greed">😎 Ganância</span>
+                        </div>
+                        
+                        <!-- Status Detalhado -->
+                        <div class="sentiment-status" id="sentimentStatus">
+                            <div class="status-item">
+                                <span class="status-icon">🟡</span>
+                                <span class="status-text">Aguardando dados</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Sistema de Interpretação Inteligente v2.4 - Redesign -->
+        <section class="interpretation-intelligent-section">
+            <div class="card interpretation-intelligent-card" id="interpretationCard">
+                <div class="card__body">
+                    <!-- Header Compacto -->
+                    <div class="interpretation-header-v2">
+                        <div class="interpretation-main">
+                            <div class="interpretation-icon-v2" id="interpretationIcon">🟡</div>
+                            <div class="interpretation-content">
+                                <h3 id="interpretationTitle">AGUARDANDO DADOS</h3>
+                                <p id="interpretationSubtitle">Insira dados para análise completa</p>
+                            </div>
+                        </div>
+                        <div class="interpretation-metrics">
+                            <div class="confidence-indicator">
+                                <span class="confidence-label">Confiabilidade</span>
+                                <div class="confidence-badge-v2" id="confidenceBadge">0%</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Resumo Executivo Compacto -->
+                    <div class="interpretation-summary-v2" id="interpretationSummary">
+                        <div class="summary-content">
+                            <div class="summary-text" id="summaryText">
+                                Insira as variações After-Market, Pré-Market, VIX, Gold e Iron Ore para análise completa
+                            </div>
+                            <div class="summary-strategy" id="summaryStrategy">
+                                Estratégia será calculada automaticamente com VIX Smart + Gold/Iron Ore Sensitivity
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Análise Detalhada em Grid -->
+                    <div class="interpretation-analysis-v2" id="interpretationAnalysis">
+                        <!-- Sinais Confirmados -->
+                        <div class="analysis-card analysis-confirmed" id="analysisConfirmed">
+                            <div class="analysis-header">
+                                <div class="analysis-icon-v2">✅</div>
+                                <div class="analysis-title">Sinais Confirmados</div>
+                            </div>
+                            <div class="analysis-description" id="confirmedDescription">
+                                Aguardando dados para análise
+                            </div>
+                        </div>
+                        
+                        <!-- Sinais Enfraquecidos -->
+                        <div class="analysis-card analysis-weakened" id="analysisWeakened">
+                            <div class="analysis-header">
+                                <div class="analysis-icon-v2">⚠️</div>
+                                <div class="analysis-title">Sinais Enfraquecidos</div>
+                            </div>
+                            <div class="analysis-description" id="weakenedDescription">
+                                Aguardando dados para análise
+                            </div>
+                        </div>
+                        
+                        <!-- Oportunidade Confirmada -->
+                        <div class="analysis-card analysis-opportunity" id="analysisOpportunity">
+                            <div class="analysis-header">
+                                <div class="analysis-icon-v2">🎯</div>
+                                <div class="analysis-title">Oportunidade Confirmada</div>
+                            </div>
+                            <div class="analysis-description" id="opportunityDescription">
+                                Aguardando dados para análise
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+
+
+        <!-- Footer Profissional v2.5 -->
+        <footer class="footer-pro">
+            <div class="footer-pro__content">
+                <div class="footer-pro__section">
+                    <h4>⚠️ Disclaimers v2.5</h4>
+                    <p>Esta ferramenta v2.5 com Saldo Remanescente Inteligente + VIX Smart + Análise Macro é para análise técnica avançada e fins educacionais. Não constitui recomendação de investimento. Trading de derivativos envolve alto risco. O usuário é totalmente responsável por suas decisões.</p>
+                </div>
+                <div class="footer-pro__section">
+                    <h4>🔬 Metodologia Avançada v2.5</h4>
+                    <p>Saldo Remanescente = Σ(Contribuição ADRs) + Σ(Contribuição Macro) + Contribuição VIX. Hierarquia: Pré-Market > After-Market > Fechamento. VIX Smart v2.5: f(vix_level, volatility_regions). Algoritmo v2.5 com Saldo Remanescente Inteligente + Indicadores Macro Balanceados.</p>
+                </div>
+                <div class="footer-pro__section">
+                    <h4>📊 Informações Técnicas v2.5</h4>
+                    <p id="footerTimestamp">Última atualização: Carregando...</p>
+                    <p>Versão v2.5 | Saldo Remanescente Inteligente | VIX Smart v2.5 | Análise Macro Balanceada | Validação Automática | Performance Otimizada</p>
+                    <p>Desenvolvido para traders profissionais com metodologia Professor Deivson Pimentel e análise de saldo remanescente</p>
+                </div>
+            </div>
+        </footer>
+            </div>
+
+            <!-- Aba Interpretação Macro -->
+            <div class="tab-panel" id="macroTab">
+                <!-- Interpretação Macro - Cenários Descritivos v2.5 -->
+                <section class="macro-scenarios">
+                    <div class="card">
+                        <div class="card__header">
+                            <h2>📖 Interpretação Macro - Cenários Descritivos v2.5</h2>
+                            <p>Como cada indicador macro correlaciona com o mini índice/IBOV - Guia educativo completo</p>
+                        </div>
+                        <div class="card__body">
+                            <div class="scenarios-grid">
+                                
+                                <!-- Card EWZ -->
+                                <div class="scenario-card scenario-card--ewz">
+                                    <div class="scenario-header">
+                                        <div class="scenario-icon">🇧🇷</div>
+                                        <h3>EWZ (ETF Brasil)</h3>
+                                        <span class="scenario-weight">Peso: 25%</span>
+                                    </div>
+                                    <div class="scenario-content">
+                                        <div class="scenario-interpretation scenario-interpretation--positive">
+                                            <h4>EWZ Positivo:</h4>
+                                            <p>Força no ETF Brasil indica apetite por emergentes</p>
+                                        </div>
+                                        <div class="scenario-interpretation scenario-interpretation--negative">
+                                            <h4>EWZ Negativo:</h4>
+                                            <p>Aversão aos mercados emergentes - pressão no mini índice</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Card S&P 500 -->
+                                <div class="scenario-card scenario-card--sp500">
+                                    <div class="scenario-header">
+                                        <div class="scenario-icon">🇺🇸</div>
+                                        <h3>S&P 500 Futures</h3>
+                                        <span class="scenario-weight">Peso: 15%</span>
+                                    </div>
+                                    <div class="scenario-content">
+                                        <div class="scenario-interpretation scenario-interpretation--positive">
+                                            <h4>S&P500 Positivo:</h4>
+                                            <p>Ambiente global otimista favorece mercados de risco</p>
+                                        </div>
+                                        <div class="scenario-interpretation scenario-interpretation--negative">
+                                            <h4>S&P500 Negativo:</h4>
+                                            <p>Mercados globais fracos - cuidado com contágio no Brasil</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Card Petróleo -->
+                                <div class="scenario-card scenario-card--oil">
+                                    <div class="scenario-header">
+                                        <div class="scenario-icon">🛢️</div>
+                                        <h3>Petróleo WTI</h3>
+                                        <span class="scenario-weight">Peso: 10%</span>
+                                    </div>
+                                    <div class="scenario-content">
+                                        <div class="scenario-interpretation scenario-interpretation--positive">
+                                            <h4>Petróleo Positivo:</h4>
+                                            <p>Beneficia PETR3/PETR4 - pode puxar IBOV para cima</p>
+                                        </div>
+                                        <div class="scenario-interpretation scenario-interpretation--negative">
+                                            <h4>Petróleo Negativo:</h4>
+                                            <p>Pressiona Petrobras - impacto negativo no índice</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Card DXY -->
+                                <div class="scenario-card scenario-card--dxy">
+                                    <div class="scenario-header">
+                                        <div class="scenario-icon">💵</div>
+                                        <h3>DXY (Dólar)</h3>
+                                        <span class="scenario-weight">Peso: 15%</span>
+                                    </div>
+                                    <div class="scenario-content">
+                                        <div class="scenario-interpretation scenario-interpretation--negative">
+                                            <h4>Dólar Forte:</h4>
+                                            <p>Pressiona emergentes e commodities - negativo para mini índice</p>
+                                        </div>
+                                        <div class="scenario-interpretation scenario-interpretation--positive">
+                                            <h4>Dólar Fraco:</h4>
+                                            <p>Favorece mercados emergentes - positivo para IBOV</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Card VIX -->
+                                <div class="scenario-card scenario-card--vix">
+                                    <div class="scenario-header">
+                                        <div class="scenario-icon">📊</div>
+                                        <h3>VIX (Volatilidade)</h3>
+                                        <span class="scenario-weight">Peso: 10%</span>
+                                    </div>
+                                    <div class="scenario-content">
+                                        <div class="scenario-interpretation scenario-interpretation--warning">
+                                            <h4>VIX Baixo (&lt;15):</h4>
+                                            <p>Zona de complacência - cuidado com reversões súbitas</p>
+                                        </div>
+                                        <div class="scenario-interpretation scenario-interpretation--danger">
+                                            <h4>VIX Alto (&gt;30):</h4>
+                                            <p>Volatilidade extrema - movimentos exagerados esperados</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Card Ouro (NOVO) -->
+                                <div class="scenario-card scenario-card--gold">
+                                    <div class="scenario-header">
+                                        <div class="scenario-icon">🥇</div>
+                                        <h3>Ouro (Gold)</h3>
+                                        <span class="scenario-weight">Peso: 10%</span>
+                                    </div>
+                                    <div class="scenario-content">
+                                        <div class="scenario-interpretation scenario-interpretation--warning">
+                                            <h4>Ouro Levemente Positivo:</h4>
+                                            <p>Leve aversão a risco - pode pressionar mini índice</p>
+                                        </div>
+                                        <div class="scenario-interpretation scenario-interpretation--danger">
+                                            <h4>Ouro Forte Alta:</h4>
+                                            <p>Mercado em pânico - REDUZIR AGRESSIVIDADE no mini índice</p>
+                                        </div>
+                                        <div class="scenario-interpretation scenario-interpretation--positive">
+                                            <h4>Ouro Negativo:</h4>
+                                            <p>Apetite por risco aumentando - ambiente favorável para IBOV</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Card Iron Ore (NOVO) -->
+                                <div class="scenario-card scenario-card--iron">
+                                    <div class="scenario-header">
+                                        <div class="scenario-icon">⛏️</div>
+                                        <h3>Iron Ore (Minério)</h3>
+                                        <span class="scenario-weight">Peso: 15%</span>
+                                    </div>
+                                    <div class="scenario-content">
+                                        <div class="scenario-interpretation scenario-interpretation--positive">
+                                            <h4>Iron Ore Positivo:</h4>
+                                            <p>Força nas commodities - VALE3 pode puxar IBOV para cima</p>
+                                        </div>
+                                        <div class="scenario-interpretation scenario-interpretation--negative">
+                                            <h4>Iron Ore Negativo:</h4>
+                                            <p>Pressão em VALE3 - pode arrastar o índice para baixo</p>
+                                        </div>
+                                        <div class="scenario-interpretation scenario-interpretation--info">
+                                            <h4>Iron Ore Extremo:</h4>
+                                            <p>Movimentos do minério amplificam no peso de VALE no IBOV</p>
+                                        </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Metodologia e Fundamentos - Professor Deivson Pimentel | Implementação por Gabriel Vantournhoudt -->
+        <section class="methodology-section">
+            <div class="card">
+                <div class="card__header">
+                    <h2>📚 Metodologia e Fundamentos v2.5</h2>
+                    <p>Metodologia do Professor Deivson Pimentel | Implementação técnica por Gabriel Vantournhoudt</p>
+                </div>
+                <div class="card__body">
+                    <div class="methodology-content">
+                        <!-- Créditos -->
+                        <div class="methodology-credits">
+                            <div class="credits-header">
+                                <h3>👨‍🏫 Créditos e Desenvolvimento</h3>
+                            </div>
+                            <div class="credits-content">
+                                <p><strong>Metodologia e ensinamentos:</strong> Professor Deivson Pimentel</p>
+                                <p><strong>Implementação técnica da calculadora:</strong> Gabriel Vantournhoudt (Aluno do Prof. Deivson)</p>
+                                <p><strong>Base teórica:</strong> Análise de correlação ADRs + Indicadores Macro + VIX Smart</p>
+                                <p><strong>Versão:</strong> Calculadora de Saldo Remanescente ADR's v2.5</p>
+                            </div>
+                        </div>
+
+                        <!-- Fórmulas Principais -->
+                        <div class="methodology-formulas">
+                            <div class="formulas-header">
+                                <h3>🧮 Fórmulas e Cálculos Principais</h3>
+                            </div>
+                            <div class="formulas-grid">
+                                <div class="formula-item">
+                                    <h4>1. Cálculo de Spread Real</h4>
+                                    <div class="formula-box">
+                                        <code>Preço After = Fechamento × (1 + %After/100)</code>
+                                        <code>Preço Pré = Preço After × (1 + %Pré/100)</code>
+                                        <code>Spread Total = ((Preço Pré - Fechamento) / Fechamento) × 100</code>
+                                    </div>
+                                    <p>Sequência temporal correta: Fechamento → After-Market → Pré-Market</p>
+                                </div>
+
+                                <div class="formula-item">
+                                    <h4>2. VIX Smart Sensitivity v2.5</h4>
+                                    <div class="formula-box">
+                                        <code>VIX < 15: Sensibilidade = 1.0x (Mercado Tranquilo)</code>
+                                        <code>VIX 15-25: Sensibilidade = 1.2x (Neutro)</code>
+                                        <code>VIX 25-35: Sensibilidade = 1.5x (Preocupação)</code>
+                                        <code>VIX > 35: Sensibilidade = 2.0x (Medo/Pânico)</code>
+                                    </div>
+                                    <p>Metodologia Professor Deivson: VIX como indicador de volatilidade e sentimento</p>
+                                </div>
+
+                                <div class="formula-item">
+                                    <h4>3. Saldo Remanescente v2.5</h4>
+                                    <div class="formula-box">
+                                        <code>Saldo = Σ(Contribuição ADRs) + Σ(Contribuição Macro) + Contribuição VIX</code>
+                                        <code>Contribuição = (Spread × Peso × Sensibilidade) / 100</code>
+                                        <code>Peso Efetivo = Peso Original × Fator Liquidez</code>
+                                    </div>
+                                    <p>Hierarquia: Pré-Market > After-Market > Fechamento (Saldo Remanescente)</p>
+                                </div>
+
+                                <div class="formula-item">
+                                    <h4>4. Análise de Divergências</h4>
+                                    <div class="formula-box">
+                                        <code>Divergência Altista = (After > 0) AND (Pré > 0)</code>
+                                        <code>Divergência Baixista = (After < 0) AND (Pré < 0)</code>
+                                        <code>Confirmação = Mesmo sentido + Diferença < 0.5%</code>
+                                    </div>
+                                    <p>Classificação matemática de sinais de mercado</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Sistema de Validação -->
+                        <div class="methodology-validation">
+                            <div class="validation-header">
+                                <h3>✅ Sistema de Validação Automática</h3>
+                            </div>
+                            <div class="validation-grid">
+                                <div class="validation-item validation-confirmed">
+                                    <div class="validation-icon">✅</div>
+                                    <div class="validation-content">
+                                        <h4>Confirmado</h4>
+                                        <p>Mesmo sentido + diferença < 0,5%</p>
+                                        <p><strong>Peso:</strong> 100% da contribuição</p>
+                                    </div>
+                                </div>
+                                <div class="validation-item validation-weakened">
+                                    <div class="validation-icon">⚠️</div>
+                                    <div class="validation-content">
+                                        <h4>Enfraquecido</h4>
+                                        <p>Mesmo sentido + diferença > 0,5%</p>
+                                        <p><strong>Peso:</strong> 70% da contribuição</p>
+                                    </div>
+                                </div>
+                                <div class="validation-item validation-diverged">
+                                    <div class="validation-icon">🔴</div>
+                                    <div class="validation-content">
+                                        <h4>Divergência</h4>
+                                        <p>Sentidos opostos</p>
+                                        <p><strong>Peso:</strong> 30% da contribuição</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Indicadores Macro -->
+                        <div class="methodology-macro">
+                            <div class="macro-header">
+                                <h3>🌍 Indicadores Macro e Correlações</h3>
+                            </div>
+                            <div class="macro-grid">
+                                <div class="macro-item">
+                                    <h4>🥇 Ouro (Gold)</h4>
+                                    <p><strong>Correlação:</strong> Inversa com apetite a risco</p>
+                                    <p><strong>Interpretação:</strong> Alta do ouro = Aversão a risco = Pressão no mini índice</p>
+                                    <p><strong>Peso v2.5:</strong> 2.5% do cálculo total (ajustado para impacto moderado)</p>
+                                </div>
+                                <div class="macro-item">
+                                    <h4>⛏️ Iron Ore (Minério)</h4>
+                                    <p><strong>Correlação:</strong> Direta com VALE3</p>
+                                    <p><strong>Interpretação:</strong> Alta do minério = Beneficia VALE = Puxa IBOV para cima</p>
+                                    <p><strong>Peso v2.5:</strong> 2.5% do cálculo total (ajustado para impacto moderado)</p>
+                                </div>
+                                <div class="macro-item">
+                                    <h4>🇺🇸 S&P 500</h4>
+                                    <p><strong>Correlação:</strong> Direta com sentimento global</p>
+                                    <p><strong>Interpretação:</strong> S&P alto = Ambiente global otimista = Favorece IBOV</p>
+                                    <p><strong>Peso v2.5:</strong> 2.5% do cálculo total (ajustado para impacto moderado)</p>
+                                </div>
+                                <div class="macro-item">
+                                    <h4>🇧🇷 EWZ (ETF Brasil)</h4>
+                                    <p><strong>Correlação:</strong> Direta com apetite por emergentes</p>
+                                    <p><strong>Interpretação:</strong> EWZ alto = Apetite por emergentes = Positivo para IBOV</p>
+                                    <p><strong>Peso v2.5:</strong> 2.5% do cálculo total (ajustado para impacto moderado)</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Novidades v2.5 -->
+                        <div class="methodology-fundamentals">
+                            <div class="fundamentals-header">
+                                <h3>🚀 Novidades v2.5</h3>
+                            </div>
+                            <div class="fundamentals-content">
+                                <div class="fundamental-item">
+                                    <h4>1. Saldo Remanescente Inteligente</h4>
+                                    <p>Implementação da lógica de "Saldo Remanescente" em vez de hierarquia anuladora. Pré-Market tem maior peso, seguido por After-Market e Fechamento.</p>
+                                </div>
+                                <div class="fundamental-item">
+                                    <h4>2. VIX Smart Sensitivity v2.5</h4>
+                                    <p>Metodologia Professor Deivson: VIX como indicador de volatilidade e sentimento. Sensibilidade ajustada baseada em regiões de mercado (Tranquilo, Neutro, Preocupação, Medo/Pânico).</p>
+                                </div>
+                                <div class="fundamental-item">
+                                    <h4>3. Indicadores Macro Balanceados</h4>
+                                    <p>Pesos ajustados para impacto moderado (2.5% cada). ADRs permanecem como foco principal, Macro como confirmação adicional.</p>
+                                </div>
+                                <div class="fundamental-item">
+                                    <h4>4. Interface Otimizada</h4>
+                                    <p>Performance melhorada com debounce, cache inteligente, mensagens padronizadas e design mais limpo e profissional.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Fundamentos Teóricos -->
+                        <div class="methodology-fundamentals">
+                            <div class="fundamentals-header">
+                                <h3>📖 Fundamentos Teóricos</h3>
+                            </div>
+                            <div class="fundamentals-content">
+                                <div class="fundamental-item">
+                                    <h4>1. Teoria da Correlação Temporal</h4>
+                                    <p>ADRs americanos refletem expectativas sobre o mercado brasileiro. Movimentos no after-market e pré-market indicam direcionamento para a abertura do IBOV.</p>
+                                </div>
+                                <div class="fundamental-item">
+                                    <h4>2. Princípio da Validação Cruzada</h4>
+                                    <p>Múltiplos indicadores devem convergir para confirmar um sinal. VIX, Gold, Iron Ore e ADRs trabalham em conjunto para validar direcionamentos.</p>
+                                </div>
+                                <div class="fundamental-item">
+                                    <h4>3. Ajuste de Sensibilidade por Volatilidade</h4>
+                                    <p>Em períodos de alta volatilidade (VIX alto), sinais são mais conservadores. Em períodos de baixa volatilidade (VIX baixo), sinais são mais agressivos.</p>
+                                </div>
+                                <div class="fundamental-item">
+                                    <h4>4. Ponderação por Liquidez</h4>
+                                    <p>ADRs com maior liquidez têm peso maior no cálculo final, refletindo maior representatividade do sentimento de mercado.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+        </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
